@@ -145,39 +145,41 @@ API Gateway (9999)
   http://localhost:9999/CUSTOMER-SERVICE/customers  
 - Comptes :  
   http://localhost:9999/ACCOUNT-SERVICE/api/accounts  
+### Test du Circuit Breaker (Resilience4J)
 
-### Test du Circuit Breaker
-1. Arrêter `customer-service`
-2. Appeler :
-3. http://localhost:9999/ACCOUNT-SERVICE/api/accounts/{id}
-4. 3. Résultat attendu :
+1. Arrêter le service `customer-service`
+2. Appeler l’endpoint suivant via la Gateway :
+   
+   http://localhost:9999/ACCOUNT-SERVICE/api/accounts/{id}
+
+3. Résultat attendu :
+
 ```json
 {
   "firstName": "Source not available",
   "lastName": "Source not available"
 }
+Rafraîchissement dynamique de la configuration
 
-Rafraîchissement de la configuration
+Modifier le fichier customer-service.properties dans le dépôt de configuration
 
-Modifier customer-service.properties
-
-Exécuter :
+Exécuter la requête suivante pour recharger la configuration :
 
 POST http://localhost:8084/actuator/refresh
 
+Vérifier la prise en compte de la nouvelle configuration :
 
-Vérifier :
-
-GET http://localhost:8084/configTes
+GET http://localhost:8084/configTest
 
 👤 Auteur
 
 Mohammed Taha Mallouk
 Étudiant Ingénieur — MIAGE
-Projet académique sur l’architecture Microservices avec Spring Cloud
+Projet académique portant sur l’architecture Microservices avec Spring Cloud
+
 📄 Licence
 
-Projet sous licence MIT.
-Libre d’utilisation, modification et distribution à des fins pédagogiques.
+Projet distribué sous licence MIT.
+Utilisation, modification et redistribution autorisées à des fins pédagogiques.
 
 © 2025 — Mohammed Taha Mallouk
