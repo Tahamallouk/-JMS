@@ -1,209 +1,183 @@
-# TP 9-1 — Java Message Service (JMS) avec Apache ActiveMQ
+# TP 8 — Architecture Microservices avec Spring Cloud (Bank App)
 
-![Java](https://img.shields.io/badge/Java-17-orange)
-![JMS](https://img.shields.io/badge/JMS-2.0-blue)
-![ActiveMQ](https://img.shields.io/badge/ActiveMQ-6.1.4-red)
-![Build](https://img.shields.io/badge/Build-Maven-blue)
-![Messaging](https://img.shields.io/badge/Messaging-Asynchronous-success)
-![Status](https://img.shields.io/badge/Status-Working-success)
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
+Ce projet correspond au **TP 8 portant sur l’architecture microservices**.  
+Il vise la réalisation d’une **application bancaire distribuée** en s’appuyant sur **Spring Boot** et **Spring Cloud**, afin de mettre en pratique les concepts clés des architectures modernes orientées services.
 
-Projet du **TP 9-1 – Java Message Service (JMS)**.  
-Ce TP a pour objectif de **mettre en œuvre la communication asynchrone** entre applications Java à l’aide de **JMS** et du broker **Apache ActiveMQ**.
-
-Le projet couvre les deux modèles fondamentaux de JMS :
-- **Point-to-Point (Queue)**
-- **Publish / Subscribe (Topic)** avec **Durable Subscribers**
+L’application repose sur les composants suivants :
+- Découverte automatique des services
+- Centralisation de la configuration
+- Passerelle API unique
+- Microservices métier indépendants
+- Communication inter-services
+- Gestion de la résilience et des pannes
 
 ---
 
 ## 📌 Sommaire
 
-1. [Objectifs du TP](#-objectifs-du-tp)
-2. [Concepts JMS](#-concepts-jms)
-3. [Stack technique](#-stack-technique)
-4. [Architecture du projet](#-architecture-du-projet)
-5. [Modules du projet](#-modules-du-projet)
-6. [Broker ActiveMQ](#-broker-activemq)
-7. [Démarrage rapide](#-démarrage-rapide)
-8. [Tests & démonstrations](#-tests--démonstrations)
-9. [Interface Web ActiveMQ](#-interface-web-activemq)
-10. [Auteurs](#-auteurs)
-11. [Licence](#-licence)
+1. Fonctionnalités  
+2. Stack technique  
+3. Architecture globale  
+4. Microservices  
+5. Ports & URLs  
+6. Démarrage rapide  
+7. Tests & démonstrations  
+8. Auteur  
+9. Licence  
 
 ---
 
-## 🎯 Objectifs du TP
+## ✅ Fonctionnalités
 
-- Comprendre l’architecture **JMS**
-- Mettre en place un **broker de messages (ActiveMQ)**
-- Implémenter :
-    - un **Producer**
-    - un **Consumer**
-- Manipuler :
-    - **Queues** (communication 1-to-1)
-    - **Topics** (communication 1-to-N)
-- Tester les **Durable Subscribers**
-- Observer les messages via la **console ActiveMQ**
+### 🧩 Architecture Microservices
+- Enregistrement et découverte des services grâce à **Eureka**
+- Routage centralisé des requêtes via **Spring Cloud Gateway**
+- Externalisation des configurations à l’aide de **Spring Cloud Config**
+- Rechargement dynamique des paramètres via `/actuator/refresh`
 
----
+### 🏦 Services métier
+- **Customer Service**
+  - Gestion des informations clients
+  - Base de données H2 en mémoire
+- **Account Service**
+  - Gestion des comptes bancaires
+  - Communication distante avec Customer Service
+  - Mise en place d’un Circuit Breaker avec mécanisme de secours
 
-## 🧠 Concepts JMS
-
-### 🔹 Queue (Point-to-Point)
-- Un message est consommé par **un seul consumer**
-- Une fois consommé, le message disparaît
-- Adapté aux traitements asynchrones
-
-### 🔹 Topic (Publish / Subscribe)
-- Un message est diffusé à **plusieurs subscribers**
-- Les **Durable Subscribers** reçoivent les messages même s’ils étaient hors ligne
+### 🛡️ Résilience
+- Utilisation de **Resilience4J**
+- Activation automatique d’un fallback en cas d’indisponibilité
+- Message retourné : `Source not available`
 
 ---
 
 ## 🛠️ Stack technique
 
-| Technologie | Version     |
-|------------|-------------|
-| Java | 17          |
-| JMS API | Jakarta JMS |
-| Apache ActiveMQ | 6.1.4       |
-| Maven | ✅️          |
-| IntelliJ IDEA | Ultimate    |
-| OS | macOS       |
+| Technologie | Version |
+|------------|--------|
+| Java | 17 |
+| Spring Boot | 3.5.8 |
+| Spring Cloud | 2025.0.0 |
+| Maven | ✔ |
+| Eureka Server | ✔ |
+| Spring Cloud Config | ✔ |
+| Spring Cloud Gateway | ✔ |
+| OpenFeign | ✔ |
+| Resilience4J | ✔ |
+| Spring Data JPA | ✔ |
+| H2 Database | ✔ |
 
 ---
 
-## 🏗️ Architecture du projet
-```
-tp9-1-jms-activemq/
-├── jms-activemq-queue-example/
-│ ├── JmsQueueProducer.java
-│ ├── JmsQueueConsumer.java
-│ └── Main.java
-│
-├── jms-activemq-topic-producer-example/
-│ ├── Article.java
-│ ├── IConstants.java
-│ ├── JmsTopicProducer.java
-│ └── Main.java
-│
-├── jms-activemq-topic-consumer-example/
-│ ├── Article.java
-│ ├── IConstants.java
-│ ├── JmsTopicConsumer.java
-│ └── Main.java
-│
+## 🏗️ Architecture globale
+bank-app/
+├── discovery-service/ # Serveur de découverte (Eureka)
+├── config-service/ # Serveur de configuration centralisée
+├── gateway-service/ # Passerelle API
+├── customer-service/ # Microservice Client
+├── account-service/ # Microservice Compte
 └── README.md
-```
 
+### Architecture logique
+Client
+│
+▼
+API Gateway (9999)
+│
+├── CUSTOMER-SERVICE (8084)
+└── ACCOUNT-SERVICE (8083)
+│
+└── OpenFeign → CUSTOMER-SERVICE
 
 ---
 
-## 🧩 Modules du projet
+## 🧩 Microservices
 
-| Module | Description |
-|------|------------|
-| jms-activemq-queue-example | Implémentation JMS **Queue** |
-| jms-activemq-topic-producer-example | Producer JMS **Topic** |
-| jms-activemq-topic-consumer-example | Consumer JMS **Topic (Durable)** |
+| Service | Rôle |
+|--------|------|
+| discovery-service | Registre des services |
+| config-service | Configuration centralisée |
+| gateway-service | Point d’entrée unique |
+| customer-service | Gestion des clients |
+| account-service | Gestion des comptes avec Feign et Circuit Breaker |
 
 ---
 
-## 🧱 Broker ActiveMQ
+## 🌐 Ports & URLs
 
-- **Broker URL** : `tcp://localhost:61616`
-- **Console Web** : http://localhost:8161/admin
-- **Login** : `admin`
-- **Password** : `admin`
-
-ActiveMQ est utilisé comme **Message Oriented Middleware (MOM)**.<br/>
+| Service | Port | URL |
+|--------|------|-----|
+| Eureka Server | 8761 | http://localhost:8761 |
+| Config Server | 8888 | http://localhost:8888 |
+| Gateway | 9999 | http://localhost:9999 |
+| Customer Service | 8084 | http://localhost:8084 |
+| Account Service | 8083 | http://localhost:8083 |
 
 ---
 
 ## 🚀 Démarrage rapide
 
-### 1️⃣ Prérequis
+### Prérequis
+- Java 17  
+- Maven  
+- Git  
+- IntelliJ IDEA / VS Code  
 
-✅ Java **17**  <br/>
-✅ Apache ActiveMQ **6.1.4**  <br/>
-✅ IntelliJ IDEA  <br/>
-✅ Git <br/>
-
-
-
-### 2️⃣ Lancer ActiveMQ
-
-Sur la console : <br/>
-
-```
-cd apache-activemq-6.1.4/bin
-./activemq start
-```
-
-Sur le navigateur : <br/>
-
-http://localhost:8161/admin <br/>
-
-avec :
-
-- **Login** : `admin`
-- **Password** : `admin`
+### Ordre de démarrage
+1. discovery-service  
+2. config-service  
+3. gateway-service  
+4. customer-service  
+5. account-service  
 
 ---
-
 
 ## 🔗 Tests & démonstrations
-🔹 Test Queue (Point-to-Point) <br/>
 
-1. Lancer : <br/>
-```
-jms-activemq-queue-example/Main.java
-```
-2. Résultat : <br/>
+### Accès direct
+- Clients :  
+  http://localhost:8084/customers  
+- Comptes :  
+  http://localhost:8083/api/accounts  
 
-- Messages envoyés par le producer
-- Messages consommés par le consumer
-- Les messages consommés disparaissent de la queue
+### Accès via la Gateway
+- Clients :  
+  http://localhost:9999/CUSTOMER-SERVICE/customers  
+- Comptes :  
+  http://localhost:9999/ACCOUNT-SERVICE/api/accounts  
 
-🔹 Test Topic (Publish / Subscribe) <br/>
-- Étape 1 — Lancer le Consumer <br/>
-```
-jms-activemq-topic-consumer-example/Main.java
-```
-- Étape 2 — Lancer le Producer <br/>
-```
-jms-activemq-topic-producer-example/Main.java
-```
+### Test du Circuit Breaker
+1. Arrêter `customer-service`
+2. Appeler :
+3. http://localhost:9999/ACCOUNT-SERVICE/api/accounts/{id}
+4. 3. Résultat attendu :
+```json
+{
+  "firstName": "Source not available",
+  "lastName": "Source not available"
+}
 
-➡️ Chaque subscriber reçoit tous les messages publiés <br/>
+Rafraîchissement de la configuration
 
----
+Modifier customer-service.properties
+
+Exécuter :
+
+POST http://localhost:8084/actuator/refresh
 
 
-## 🌐 Interface Web ActiveMQ
+Vérifier :
 
-| ActiveMQ Dashboard | Test Queue       | Statistiques du Test Queue dans l'interface Web ActiveMQ | Statistiques : Enqueue / Dequeue | Test Topic Lancer le Consumer     | Test Topic Lancer le Producer  | Liste des topics | Statistiques par subscriber |
-|------------------|-----------------|----------------------------------------------------------|-----------------------|-----------------|---------------------------------|----------------------------|---------------------------|
-| ![](docs/1.png)  | ![](docs/2.png) | ![](docs/3.png)                                          | ![](docs/4.png)       | ![](docs/5.png) | ![](docs/6.png)                 | ![](docs/7.png)            | ![](docs/8.png)           | 
+GET http://localhost:8084/configTes
 
----
+👤 Auteur
 
-## 👥 Auteurs
+Mohammed Taha Mallouk
+Étudiant Ingénieur — MIAGE
+Projet académique sur l’architecture Microservices avec Spring Cloud
+📄 Licence
 
-Anas KRIR & Adam EL YOURI<br/>
-Étudiants Ingénieurs — MIAGE<br/>
-TP réalisé dans le cadre du module J2EE <br/>
+Projet sous licence MIT.
+Libre d’utilisation, modification et distribution à des fins pédagogiques.
 
-Java · JMS · Apache ActiveMQ · Asynchronous Messaging<br/>
-
----
-
-## 📄 Licence
-
-✅ Projet sous licence MIT <br/>
-Libre d’utilisation, modification et distribution à des fins pédagogiques.<br/>
-
-© 2025 — Anas KRIR & Adam EL YOURI
-
----
+© 2025 — Mohammed Taha Mallouk
